@@ -265,7 +265,14 @@ export default function App() {
   const handleDownloadCSV = async () => {
     try {
       const response = await fetch('/csv');
+      
+      if (response.status === 404) {
+        setError("NO_DATA: Your dataset is currently empty. Detect at least one bus to generate a CSV log.");
+        return;
+      }
+      
       if (!response.ok) throw new Error('Download failed');
+      
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -277,7 +284,7 @@ export default function App() {
       document.body.removeChild(a);
     } catch (err) {
       console.error("CSV Download Error:", err);
-      setError("DOWNLOAD_ERROR: Failed to retrieve dataset. Ensure the sensor has logged at least one vehicle.");
+      setError("DOWNLOAD_ERROR: Failed to retrieve dataset. Check your connection and try again.");
     }
   };
 

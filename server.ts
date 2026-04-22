@@ -54,9 +54,17 @@ async function startServer() {
         console.log("[GITHUB]: Creating new dataset file.");
       }
 
-      const historyData = JSON.parse(currentContent);
+      let historyData = [];
+      try {
+        historyData = JSON.parse(currentContent);
+        if (!Array.isArray(historyData)) historyData = [];
+      } catch (e) {
+        historyData = [];
+      }
+      
       historyData.push(data);
       
+      // Perform Update
       await octokit.rest.repos.createOrUpdateFileContents({
         owner: GITHUB_OWNER,
         repo: GITHUB_REPO,
@@ -65,9 +73,25 @@ async function startServer() {
         content: Buffer.from(JSON.stringify(historyData, null, 2)).toString('base64'),
         sha,
       });
+
+      // Weekly Snapshot Check
+      const now = new Date();
+      const weekNumber = Math.ceil((now.getDate() + 6 - now.getDay()) / 7);
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+      const weeklyPath = `datasets/weekly/year_${year}_month_${month}_week_${weekNumber}.json`;
+
+      await octokit.rest.repos.createOrUpdateFileContents({
+        owner: GITHUB_OWNER,
+        repo: GITHUB_REPO,
+        path: weeklyPath,
+        message: `📅 Weekly Snapshot: Week ${weekNumber}`,
+        content: Buffer.from(JSON.stringify(historyData.slice(-100), null, 2)).toString('base64'),
+      }).catch(err => console.error("[GITHUB]: Weekly snapshot skip", err.message));
+
       console.log("[GITHUB]: Successfully synced detection.");
-    } catch (err) {
-      console.error("[GITHUB]: Sync failed", err);
+    } catch (err: any) {
+      console.error("[GITHUB]: Sync operation failed internally:", err.message);
     }
   }
 
@@ -80,8 +104,11 @@ async function startServer() {
 
   // Export Dataset (CSV)
   app.get("/csv", (req, res) => {
-    if (history.length === 0) {
-      return res.send("No data captured yet to generate dataset.");
+    if (!history || history.length === 0) {
+      return res.status(404).json({ 
+        error: "NO_DATA", 
+        message: "No vehicle detections have been recorded yet." 
+      });
     }
 
     // Standardized headers for the dataset
@@ -123,17 +150,30 @@ async function startServer() {
 
   // Internal API to update the latest result from the frontend
   app.post("/api/results", async (req, res) => {
-    const data = {
-      ...req.body,
-      server_timestamp: Date.now()
-    };
-    lastResult = data;
-    history.push(data);
-    
-    // Automatic Background Sync to GitHub Repository
-    pushToGithub(data);
-    
-    res.json({ success: true });
+    try {
+      const data = {
+        ...req.body,
+        server_timestamp: Date.now()
+      };
+      
+      // Basic validation to prevent 500s on malformed input
+      if (!data.plate) {
+        return res.status(400).json({ error: "INVALID_PAYLOAD: Missing license plate" });
+      }
+
+      lastResult = data;
+      history.push(data);
+      
+      // Async Sync (Don't await to keep UI responsive)
+      pushToGithub(data).catch(err => {
+        console.error("[BACKGROUND_SYNC_ERROR]:", err.message);
+      });
+      
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[SERVER_ERROR]:", err.message);
+      res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: err.message });
+    }
   });
 
   // Vite middleware for development

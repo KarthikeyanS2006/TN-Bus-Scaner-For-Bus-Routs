@@ -1,0 +1,12 @@
+[
+  {
+    "plate": "TN 72 N 2422",
+    "route": "134",
+    "destination": null,
+    "operator": "Private",
+    "bus_name": null,
+    "confidence": 0.6,
+    "is_tn_bus": true,
+    "server_timestamp": 1776840438586
+  }
+]

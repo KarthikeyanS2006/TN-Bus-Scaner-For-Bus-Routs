@@ -63,6 +63,17 @@ export default function App() {
       const data = await extractTransitData(fullImage, plateCrop);
       setResult(data);
       setHistory(prev => [{ ...data, timestamp: Date.now() }, ...prev].slice(0, 10));
+      
+      // Push newest data to the server for the /json endpoint
+      try {
+        await fetch('/api/results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } catch (e) {
+        console.error("Failed to sync with server API", e);
+      }
     } catch (err: any) {
       console.error(err);
       setError(err.message || "An unexpected error occurred during analysis.");

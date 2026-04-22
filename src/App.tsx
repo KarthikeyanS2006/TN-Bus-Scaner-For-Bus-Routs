@@ -262,6 +262,25 @@ export default function App() {
     };
   }, [isAutoInference, isCameraActive, detector]);
 
+  const handleDownloadCSV = async () => {
+    try {
+      const response = await fetch('/csv');
+      if (!response.ok) throw new Error('Download failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tn_transit_dataset_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("CSV Download Error:", err);
+      setError("DOWNLOAD_ERROR: Failed to retrieve dataset. Ensure the sensor has logged at least one vehicle.");
+    }
+  };
+
   return (
     <div className="flex h-screen bg-[#f1f5f9] overflow-hidden font-sans">
       {/* Sidebar / Configuration Panel */}
@@ -425,14 +444,13 @@ export default function App() {
           <div className="flex items-center space-x-8">
             <span className="text-sm font-bold text-slate-900 border-b-2 border-blue-600 h-16 flex items-center">Live Analysis</span>
             <span className="text-sm font-medium text-slate-400 hover:text-slate-600 cursor-pointer">Log Stream</span>
-            <a 
-              href="/csv" 
+            <button 
+              onClick={handleDownloadCSV}
               className="text-sm font-medium text-slate-400 hover:text-blue-600 cursor-pointer flex items-center gap-2"
-              download
             >
               <Database className="w-3.5 h-3.5" />
               Download Dataset (CSV)
-            </a>
+            </button>
           </div>
           <div className="flex items-center space-x-6">
             <div className="hidden xl:flex items-center space-x-3 text-xs text-slate-400 font-mono">

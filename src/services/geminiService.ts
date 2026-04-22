@@ -16,13 +16,16 @@ Input: You will receive two images (one full bus view, one license plate crop).
 
 Task:
 1. Read the TN Registration Plate from the crop (strictly alphanumeric, e.g., TN-xx-xxxx).
-2. Read the LED Destination Board from the full bus.
-3. Identify the Route Number and the Final Destination text. 
-4. Identify the Operator (TNSTC, SETC, or Private).
-5. Private Branding: If the operator is "Private", identify the specific name of the bus service (e.g., "KPN", "Velas", "National"). This branding is usually prominent on the front, sides, or glass.
-6. Constraint: If the text is in Tamil, translate the destination to English (e.g., "மதுரை" -> "Madurai").
-7. Validation: District codes 01 to 99 are valid for Tamil Nadu. If code > 99 or prefix != TN, is_tn_bus = false.
-8. Low Light: If imagery is grainy, use bus color (Green/Yellow for local, Blue/White for interstate) and logo to assist.
+2. TN Validation Rule:
+   - The plate MUST start with "TN".
+   - It MUST be followed by a valid district code between "01" and "99".
+   - If either of these conditions is NOT met (e.g., starts with PY, KA, or code is 00 or > 99), you MUST set "is_tn_bus" to false.
+3. Read the LED Destination Board from the full bus.
+4. Identify the Route Number and the Final Destination text. 
+5. Identify the Operator (TNSTC, SETC, or Private).
+6. Private Branding: If the operator is "Private", identify the specific name of the bus service (e.g., "KPN", "Velas", "National").
+7. Constraint: If the text is in Tamil, translate the destination to English.
+8. Low Light: If imagery is grainy, use bus color and logo to assist.
 
 Strict Rule: Return ONLY a JSON object. No conversation.
 `;
@@ -80,9 +83,13 @@ export async function extractTransitData(
       }
     });
 
+    if (!response) {
+      throw new Error("EMPTY_RESPONSE: The model failed to generate a response for these images.");
+    }
+
     const text = response.text;
     if (!text) {
-      throw new Error("EMPTY_RESPONSE: The model failed to generate a response for these images.");
+      throw new Error("EMPTY_RESPONSE: No metadata could be extracted from the provided source.");
     }
 
     try {
@@ -92,18 +99,22 @@ export async function extractTransitData(
       throw new Error("PARSING_FAILURE: The extraction agent returned malformed data. Please try again with clearer images.");
     }
   } catch (error: any) {
-    // Check for common API errors
-    if (error.message?.includes('quota')) {
-      throw new Error("QUOTA_EXCEEDED: API limit reached. Please try again later.");
-    }
-    if (error.message?.includes('API key')) {
-      throw new Error("API_KEY_INVALID: The configured Gemini API key is invalid or restricted.");
+    // Check for specific Gemini API errors
+    const errorMsg = error.message?.toLowerCase() || '';
+    
+    if (errorMsg.includes('quota') || errorMsg.includes('429')) {
+      throw new Error("QUOTA_EXCEEDED: Gemini API limit reached. Please wait a minute or check your plan.");
     }
     
-    // Re-throw if it's already one of our custom messages, otherwise wrap it
+    if (errorMsg.includes('api key') || errorMsg.includes('401') || errorMsg.includes('403')) {
+      throw new Error("API_KEY_INVALID: The configured Gemini API key is missing, invalid, or restricted.");
+    }
+
+    // Re-proxy our existing codes
     if (error.message?.includes(': ')) {
       throw error;
     }
+
     throw new Error(`EXTRACTION_ERROR: ${error.message || 'An unexpected error occurred during visual analysis.'}`);
   }
 }

@@ -425,7 +425,14 @@ export default function App() {
           <div className="flex items-center space-x-8">
             <span className="text-sm font-bold text-slate-900 border-b-2 border-blue-600 h-16 flex items-center">Live Analysis</span>
             <span className="text-sm font-medium text-slate-400 hover:text-slate-600 cursor-pointer">Log Stream</span>
-            <span className="text-sm font-medium text-slate-400 hover:text-slate-600 cursor-pointer">Statistics</span>
+            <a 
+              href="/csv" 
+              className="text-sm font-medium text-slate-400 hover:text-blue-600 cursor-pointer flex items-center gap-2"
+              download
+            >
+              <Database className="w-3.5 h-3.5" />
+              Download Dataset (CSV)
+            </a>
           </div>
           <div className="flex items-center space-x-6">
             <div className="hidden xl:flex items-center space-x-3 text-xs text-slate-400 font-mono">

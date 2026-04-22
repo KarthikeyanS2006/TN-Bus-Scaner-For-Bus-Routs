@@ -1,0 +1,12 @@
+{
+  "name": "TN Transit Monitor",
+  "description": "Real-time AI transit monitoring agent for Tamil Nadu. Extracts license plates, routes, and destinations from bus imagery.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "Vision AI",
+    "OCR",
+    "Real-time Monitoring"
+  ]
+}

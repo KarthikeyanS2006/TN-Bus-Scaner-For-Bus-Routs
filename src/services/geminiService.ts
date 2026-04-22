@@ -19,9 +19,10 @@ Task:
 2. Read the LED Destination Board from the full bus.
 3. Identify the Route Number and the Final Destination text. 
 4. Identify the Operator (TNSTC, SETC, or Private).
-5. Constraint: If the text is in Tamil, translate the destination to English (e.g., "மதுரை" -> "Madurai").
-6. Validation: District codes 01 to 99 are valid for Tamil Nadu. If code > 99 or prefix != TN, is_tn_bus = false.
-7. Low Light: If imagery is grainy, use bus color (Green/Yellow for local, Blue/White for interstate) and logo to assist.
+5. Private Branding: If the operator is "Private", identify the specific name of the bus service (e.g., "KPN", "Velas", "National"). This branding is usually prominent on the front, sides, or glass.
+6. Constraint: If the text is in Tamil, translate the destination to English (e.g., "மதுரை" -> "Madurai").
+7. Validation: District codes 01 to 99 are valid for Tamil Nadu. If code > 99 or prefix != TN, is_tn_bus = false.
+8. Low Light: If imagery is grainy, use bus color (Green/Yellow for local, Blue/White for interstate) and logo to assist.
 
 Strict Rule: Return ONLY a JSON object. No conversation.
 `;
@@ -37,6 +38,7 @@ const responseSchema = {
       enum: ["TNSTC", "SETC", "Private", "Unknown"],
       description: "The transport operator identified from logo or livery" 
     },
+    bus_name: { type: Type.STRING, description: "The specific branding name for private buses (e.g., KPN, National). Null if government bus." },
     is_tn_bus: { type: Type.BOOLEAN, description: "Whether the bus is registered in Tamil Nadu" },
     confidence: { type: Type.NUMBER, description: "Extraction confidence score 0.0 - 1.0" }
   },

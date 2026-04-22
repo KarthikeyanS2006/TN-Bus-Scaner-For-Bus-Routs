@@ -8,6 +8,7 @@ export interface TransitMetadata {
   route: string;
   destination: string;
   operator: 'TNSTC' | 'SETC' | 'Private' | 'Unknown';
+  bus_name?: string;
   is_tn_bus: boolean;
   confidence: number;
 }

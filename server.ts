@@ -35,19 +35,35 @@ async function startServer() {
       return res.send("No data captured yet to generate dataset.");
     }
 
-    const headers = ["Timestamp", "Day", "Date", "Time", "Plate", "Operator", "Bus Name", "Route", "Destination", "Confidence"];
-    const rows = history.map(item => [
-      new Date(item.server_timestamp).toISOString(),
-      new Date(item.server_timestamp).toLocaleDateString('en-IN', { weekday: 'long' }),
-      new Date(item.server_timestamp).toLocaleDateString('en-IN'),
-      new Date(item.server_timestamp).toLocaleTimeString('en-IN', { hour12: false }),
-      `"${item.plate}"`,
-      `"${item.operator}"`,
-      `"${item.bus_name || 'N/A'}"`,
-      `"${item.route || 'N/A'}"`,
-      `"${item.destination}"`,
-      item.confidence
-    ]);
+    // Standardized headers for the dataset
+    const headers = [
+      "ISO_Timestamp", 
+      "Day_of_Week", 
+      "Calendar_Date", 
+      "Local_Time_24h", 
+      "License_Plate", 
+      "Operator_Type", 
+      "Bus_Service_Name", 
+      "Route_ID", 
+      "Destination_Target", 
+      "AI_Confidence"
+    ];
+
+    const rows = history.map(item => {
+      const dt = new Date(item.server_timestamp);
+      return [
+        dt.toISOString(),
+        dt.toLocaleDateString('en-US', { weekday: 'long' }),
+        dt.toISOString().split('T')[0], // YYYY-MM-DD
+        dt.toLocaleTimeString('en-GB', { hour12: false }), // 24h format
+        `"${item.plate}"`,
+        `"${item.operator}"`,
+        `"${item.bus_name || 'N/A'}"`,
+        `"${item.route || 'N/A'}"`,
+        `"${item.destination}"`,
+        item.confidence.toFixed(4)
+      ];
+    });
 
     const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
     

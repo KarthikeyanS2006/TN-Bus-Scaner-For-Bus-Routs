@@ -86,6 +86,9 @@ async function startServer() {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`JSON Endpoint available at http://localhost:${PORT}/json`);
   });
+
+  return app;
 }
 
-startServer();
+const appPromise = startServer();
+export default appPromise;
